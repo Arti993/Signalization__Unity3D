@@ -8,7 +8,8 @@ public class Player : MonoBehaviour
 {
     [SerializeField] private float _moveSpeed;
     [SerializeField] private float _rotateSpeed;
-    
+
+    private const string AnimationBlendTreeParametr = "movementSpeed";
     private Animator _animator;
     private Rigidbody _rigidbody;
     private PlayerInput _input;
@@ -34,7 +35,7 @@ public class Player : MonoBehaviour
     {
         if (direction.sqrMagnitude < 0.1)
         {
-            _animator.SetFloat("movementSpeed", 0);
+            _animator.SetFloat(AnimationBlendTreeParametr, 0);
             return; 
         }    
 
@@ -44,6 +45,6 @@ public class Player : MonoBehaviour
        
         transform.position += moveDirectionVector * _moveSpeed * Time.deltaTime;
 
-        _animator.SetFloat("movementSpeed", Vector3.ClampMagnitude(moveDirectionVector, 1).magnitude);
+        _animator.SetFloat(AnimationBlendTreeParametr, Vector3.ClampMagnitude(moveDirectionVector, 1).magnitude);
     }
 }

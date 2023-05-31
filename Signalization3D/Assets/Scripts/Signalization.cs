@@ -7,60 +7,78 @@ using UnityEngine.Events;
 [RequireComponent(typeof(AudioSource))]
 public class Signalization : MonoBehaviour
 {
-    [SerializeField] private float _volumeChangeSpeed;
+    [SerializeField] private float _volumeChangeDuration;
 
     private SignalizationZone _signalizationZone;
     private AudioSource _audioSource;
+    private Coroutine _currentCoroutine;
 
-    private bool _isIntruderInZone;
     private float _maxVolume = 1;
     private float _minVolume = 0;
 
-    private void OnDisable()
-    {
-        _signalizationZone.Alarmed -= OnAlarmed;
-        _signalizationZone.Disalarmed -= OnDisalarmed;
-    }
-
-    private void Awake()
+    private void Start()
     {
         _audioSource = GetComponent<AudioSource>();
         _signalizationZone = GetComponent<SignalizationZone>();
 
-        _isIntruderInZone = false;
         _audioSource.volume = _minVolume;
+        _currentCoroutine = null;
 
         _signalizationZone.Alarmed += OnAlarmed;
-        _signalizationZone.Disalarmed += OnDisalarmed;
     }
 
-    private void Update()
+    private void OnDisable()
     {
-        if (_isIntruderInZone)
+        _signalizationZone.Alarmed -= OnAlarmed;
+    }
+
+    private void OnAlarmed(bool isIntruderInHouse)
+    {
+        if (_currentCoroutine != null)
         {
-            if (_audioSource.volume < _maxVolume)
-                _audioSource.volume += _volumeChangeSpeed * Time.deltaTime;
+            StopCoroutine(_currentCoroutine);
+        }
+
+        _currentCoroutine = StartCoroutine(ControlSignalization(_volumeChangeDuration, isIntruderInHouse));
+    }
+
+    private IEnumerator ControlSignalization(float duration, bool isIntruderInHouse)
+    {
+        float stepsCount = 10f;
+        float proportion;
+        var waitForSeconds = new WaitForSeconds(duration / stepsCount);
+
+        if (isIntruderInHouse)
+        {
+            _maxVolume = 1;
+            _minVolume = _audioSource.volume;
+            _audioSource.Play();
+            stepsCount -= _audioSource.volume * stepsCount;
         }
         else
         {
-            if (_audioSource.volume > _minVolume)
-            {
-                _audioSource.volume -= _volumeChangeSpeed * Time.deltaTime;
-
-                if(_audioSource.volume == 0)
-                    _audioSource.Stop();
-            }
+            _minVolume = 0;
+            _maxVolume = _audioSource.volume;
+            stepsCount -= (stepsCount - _audioSource.volume * stepsCount);
         }
-    }
 
-    private void OnAlarmed()
-    {
-        _isIntruderInZone = true;
-        _audioSource.Play();
-    }
+        for (int i = 1; i <= stepsCount; i++)
+        {
+            proportion = i / stepsCount;
 
-    private void OnDisalarmed()
-    {
-        _isIntruderInZone = false;
+            if (isIntruderInHouse)
+                _audioSource.volume = Mathf.Lerp(_minVolume, _maxVolume, proportion);
+            else
+                _audioSource.volume = Mathf.Lerp(_maxVolume, _minVolume, proportion);
+
+            yield return waitForSeconds;
+        }
+
+        if (isIntruderInHouse == false)
+            _audioSource.Stop();
+
+        _minVolume = 0;
+        _maxVolume = 1;
+        _currentCoroutine = null;
     }
 }

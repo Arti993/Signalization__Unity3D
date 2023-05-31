@@ -6,14 +6,16 @@ using UnityEngine.Events;
 
 public class SignalizationZone : MonoBehaviour
 {
-    public event UnityAction Alarmed;
-    public event UnityAction Disalarmed;
+    private bool _isIntruderInHouse;
+
+    public event UnityAction<bool> Alarmed;
   
     private void OnTriggerEnter(Collider collision)
     {
         if (collision.TryGetComponent(out Player player))
         {
-            Alarmed?.Invoke();
+            _isIntruderInHouse = true;
+            Alarmed?.Invoke(_isIntruderInHouse);
         }
     }
 
@@ -21,7 +23,8 @@ public class SignalizationZone : MonoBehaviour
     {
         if (collision.TryGetComponent(out Player player))
         {
-            Disalarmed?.Invoke();
+            _isIntruderInHouse = false;
+            Alarmed?.Invoke(_isIntruderInHouse);
         }
     }
 
